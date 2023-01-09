@@ -8,7 +8,7 @@ pub mod proc {
         Win32::{
             Foundation::{
                 CloseHandle, BOOL, ERROR_INSUFFICIENT_BUFFER, HANDLE, INVALID_HANDLE_VALUE, LUID,
-                PSID,
+                PSID, MAX_PATH,
             },
             Security::{
                 AdjustTokenPrivileges, AllocateAndInitializeSid, CheckTokenMembership, FreeSid,
@@ -26,7 +26,7 @@ pub mod proc {
                     EXTENDED_STARTUPINFO_PRESENT, LPPROC_THREAD_ATTRIBUTE_LIST,
                     PROCESS_INFORMATION, PROC_THREAD_ATTRIBUTE_PARENT_PROCESS,
                     STARTF_USESHOWWINDOW, STARTUPINFOEXW,
-                },
+                }, SystemInformation::GetSystemDirectoryW,
             },
             UI::{
                 Shell::ShellExecuteW,
@@ -214,6 +214,9 @@ pub mod proc {
                         let mut us_cmdline: Vec<_> = cmdline.encode_utf16().collect();
                         us_cmdline.push(0x0);
 
+                        let mut system_path: [u16; MAX_PATH as _] = zeroed();
+                        GetSystemDirectoryW(Some(&mut system_path));
+
                         CreateProcessW(
                             None,
                             PWSTR::from_raw(us_cmdline.as_mut_ptr()),
@@ -222,7 +225,7 @@ pub mod proc {
                             false,
                             CREATE_UNICODE_ENVIRONMENT | EXTENDED_STARTUPINFO_PRESENT,
                             None,
-                            None,
+                            PCWSTR::from_raw(system_path.as_ptr()),
                             &mut si.StartupInfo,
                             &mut pi,
                         )
